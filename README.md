@@ -1,94 +1,54 @@
-# MQTTKit
+##Dynamic Time Warping Project
 
-MQTTKit is a modern event-driven Objective-C library for [MQTT 3.1][mqtt].
-
-It uses [Mosquitto 1.2.3](http://mosquitto.org) library.
-
-An iOS application using MQTTKit is available at [MQTTExample](https://github.com/jmesnil/MQTTExample).
-
-# Project Status
-
-__This project is _no longer maintained_ ([some context about this decision](http://jmesnil.net/weblog/2015/09/04/stepping-out-from-personal-open-source-projects/)).__
-
-__If you encounter bugs with it or need enhancements, you can fork it and modify it as the project is under the Apache License 2.0.__
-
-[![Build Status](https://travis-ci.org/mobile-web-messaging/MQTTKit.svg?branch=master)](https://travis-ci.org/mobile-web-messaging/MQTTKit)
-
-## Installation Using CocoaPods
-
-On your ```Podfile``` add this project:
+Installation
 
 ```
-...
-pod 'MQTTKit', :git => 'https://github.com/mobile-web-messaging/MQTTKit.git'
-...
+pip install cdtw
 ```
 
-For the first time, run ```pod install```, if you are updating the project invoke ```pod update```.
+[Examples](https://github.com/honeyext/cdtw/blob/master/cdtw/examples.ipynb)
 
-## Usage
+This module implements:
 
-Import the `MQTTKit.h` header file
+Distance functions:
+ * manhattan 
+ * euclidean 
+ * squared euclidean
 
-```objc
-#import <MQTTKit.h>
-```
+Local constraints(step patterns, step functions):
+ * [well known step patterns dp1, dp2, dp3][1]
+ * [local constraints classified by Sakoe-Chiba][2]
+impo
+Global constraints(windows):
+ * Itakura parallelogram
+ * [Sakoe-chiba band, Palival adjustment window][3]
+ 
+```python
+import numpy as np
+from cdtw import pydtw
+r = np.array([1,2,3,4])
+q = np.array([2,3,4,5])
+d = pydtw.dtw(r,q,pydtw.Settings(step = 'p0sym',     #Sakoe-Chiba symmetric step with slope constraint p = 0
+                                window = 'palival', #type of the window
+                                param = 2.0,        #window parameter
+                                norm = False,       #normalization
+                                compute_path = True))
 
-### Send a Message
+d.get_dist()
+#2.0
+d.get_cost()
+#array([[  1.,   3.,   6.,  inf],
+#       [  1.,   2.,   4.,   7.],
+#       [  2.,   1.,   2.,   4.],
+#       [ inf,   2.,   1.,   2.]])
+d.get_path()
+#[(0, 0), (1, 0), (2, 1), (3, 2), (3, 3)]
 
-```objc
-// create the client with a unique client ID
-NSString *clientID = ...
-MQTTClient *client = [[MQTTClient alloc] initWithClientId:clientID];
+  
 
-// connect to the MQTT server
-[self.client connectToHost:@"iot.eclipse.org" 
-         completionHandler:^(NSUInteger code) {
-    if (code == ConnectionAccepted) {
-        // when the client is connected, send a MQTT message
-        [self.client publishString:@"Hello, MQTT"
-                           toTopic:@"/MQTTKit/example"
-                           withQos:AtMostOnce
-                            retain:NO
-                 completionHandler:^(int mid) {
-            NSLog(@"message has been delivered");
-        }];
-    }
-}];
 
 ```
 
-### Subscribe to a Topic and Receive Messages
-
-```objc
-
-// define the handler that will be called when MQTT messages are received by the client
-[self.client setMessageHandler:^(MQTTMessage *message) {
-    NSString *text = [message.payloadString];
-    NSLog(@"received message %@", text);
-}];
-
-// connect the MQTT client
-[self.client connectToHost:@"iot.eclipse.org"
-         completionHandler:^(MQTTConnectionReturnCode code) {
-    if (code == ConnectionAccepted) {
-        // when the client is connected, subscribe to the topic to receive message.
-        [self.client subscribe:@"/MQTTKit/example"
-         withCompletionHandler:nil];
-    }
-}];
-```
-
-### Disconnect from the server
-
-```objc
-[self.client disconnectWithCompletionHandler:^(NSUInteger code) {
-    // The client is disconnected when this completion handler is called
-    NSLog(@"MQTT client is disconnected");
-}];
-```
-## Authors
-
-* [Jeff Mesnil](http://jmesnil.net/)
-
-[mqtt]: http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html
+[1]: http://cyber.felk.cvut.cz/gerstner/teaching/zbd/dtw.pdf
+[2]: http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=1163055&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D1163055
+[3]: https://maxwell.ict.griffith.edu.au/spl/publications/papers/sigpro82_kkp_dtw.pdf
